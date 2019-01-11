@@ -1,50 +1,34 @@
 package com.example.liapan.hello;
 
 import android.app.Activity;
-
 import android.graphics.Bitmap;
 import android.view.ContextMenu;
-
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-
-import android.net.Uri;
 import android.os.Bundle;
-
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.PopupMenu;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Random;
+
 
 public class MainActivity extends Activity {
-
+    static Random random = new Random();
     private Bitmap bmp;
     private Bitmap originalBitmap;
-    private Bitmap bmpTmp;
+
     private int w;
     private int h;
-    protected ImageView iw, redView, greenView;
+    protected ImageView iw;
     private TextView tv;
     private BitmapFactory.Options o;
-    private SeekBar seekbar, seekbar2;
-    private Button button, saveButton, resetButton;
-    private PopupMenu popupmenu;
-    private Uri imageUri;
-    String imagePath;
-    int hueMin, hueMax;
-
-    int[][] averageMask = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
-    int[][] gaussianMask = {{1, 2, 3, 2, 1}, {2, 6, 8, 6, 2}, {3, 8, 10, 8, 3}, {2, 6, 8, 6, 2}, {1, 2, 3, 2, 1}};
-    int[][] h1Sobel = {{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}};
-    int[][] h2Sobel = {{-1, -2, -1}, {0, 0, 0}, {1, 2, 1}};
-    int[][] laplace4cx = {{0, 1, 0}, {1, -4, 1}, {0, 1, 0}};
+    private Button  resetButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,11 +51,7 @@ public class MainActivity extends Activity {
         //colorLDE(bmp);
         //togray_diminue_dynamique(bmp);
         //colorize(bmp,1.f);
-        red_rest();
-        //averageFilter(bmp);
-        //gaussianFilter(bmp);
-        //sobel(bmp);
-        //laplace(bmp);
+        //red_rest();
         //toGrayHistEqual(bmp);
         //colorHistEqual(bmp);
 
@@ -93,13 +73,14 @@ public class MainActivity extends Activity {
 
 
     }
-    @Override
+    //@Override
 
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo){
         super.onCreateContextMenu(menu,v,menuInfo);
         MenuInflater inflater = getMenuInflater();
         menu.setHeaderTitle("Choose image");
         inflater.inflate(R.menu.context_menu,menu);
+
     }
 
     @Override
@@ -153,16 +134,11 @@ public class MainActivity extends Activity {
             case R.id.colorHistEqual:
                 colorHistEqual(bmp);
                 break;
-
-            case R.id.averageFilter:
-                averageFilter(bmp);
+            case R.id.red_rest:
+                red_rest();
                 break;
-
-            case R.id.sobel:
-                sobel(bmp);
-                break;
-            case R.id.laplace:
-                laplace(bmp);
+            case R.id.colorize:
+                colorize(bmp);
                 break;
             default:
                 return super.onOptionsItemSelected(item);
@@ -198,7 +174,7 @@ public class MainActivity extends Activity {
          * @param bmp :
          *            the Bitmap which is modified
          */
-        public void toGrayLDE (Bitmap bmp){
+        public void toGrayLDE (Bitmap bmp) {
             int min = 255;
             int max = 0;
             for (int x = 0; x < w; x++) {
@@ -447,10 +423,10 @@ public class MainActivity extends Activity {
         bmp.setPixels(pixels, 0, w, 0, 0, w, h);
     }
 
-        public void colorize (Bitmap bmp,float tint){
-
+        public void colorize (Bitmap bmp){
+            int tint = random.nextInt(359);
             int[] pixels = new int[h * w];
-            bmpTmp.getPixels(pixels, 0, w, 0, 0, w, h);
+            bmp.getPixels(pixels, 0, w, 0, 0, w, h);
 
             float[] hsv = new float[3];
 
@@ -464,6 +440,7 @@ public class MainActivity extends Activity {
 
             bmp.setPixels(pixels, 0, w, 0, 0, w, h);
         }
+
         /**
          *Converts an RGB Bitmap to a gray one keeping only the red colour of pixels
          */
@@ -484,6 +461,8 @@ public class MainActivity extends Activity {
             }
             bmp.setPixels(pixels, 0, w, 0, 0, w, h);
         }
+
+
         /**
          * Calculates the convolution of a canal of a Bitmap using a mask.
          * @param canal :
@@ -497,11 +476,11 @@ public class MainActivity extends Activity {
             int n = mask.length / 2;
             int[] canalConvo = new int[h * w];
 
-            for (int i = n * (w + 1); i < h * w - n * (w + 1); i++) {                                //do not apply on side edges up and down
+            for (int i = n * (w + 1); i < h * w - n * (w + 1); i++) {
 
                 int y = i / w;
 
-                if (y % w != 0 && y % (w - 1) != 0) {                                  //do not apply on upper and lower edges
+                if (y % w != 0 && y % (w - 1) != 0) {
                     int convo = 0;
 
                     for (int u = -n; u <= n; u++) {
@@ -522,142 +501,6 @@ public class MainActivity extends Activity {
 
             return canalConvo;
         }
-        /**
-         * Blurs a Bitmap changing a pixel by the average of its neighbour pixels.
-         * Smooths the Bitmap and reduces the noise and the details in the Bitmap.
-         * @param bmp :
-         *            the Bitmap which is modified
-         */
-        public void averageFilter (Bitmap bmp){
-            int[] pixels = new int[w * h];
-            bmp.getPixels(pixels, 0, w, 0, 0, w, h);
-            int[][] usedMask = averageMask;
-            int n = usedMask.length / 2;
-            int maskTotal = 0;
-            for (int u = -n; u <= n; u++) {
-                for (int v = -n; v <= n; v++) {
-                    maskTotal += usedMask[u + n][v + n];                        //The sum of the mask's values
-                }
-            }
-            int[] redCanal = new int[h * w];
-            int[] greenCanal = new int[h * w];
-            int[] blueCanal = new int[h * w];
-            for (int i = 0; i < h * w; i++) {
-                redCanal[i] = Color.red(pixels[i]);
-                greenCanal[i] = Color.green(pixels[i]);
-                blueCanal[i] = Color.blue(pixels[i]);
-            }
-            redCanal = convolution(redCanal, usedMask);
-            greenCanal = convolution(greenCanal, usedMask);
-            blueCanal = convolution(blueCanal, usedMask);
-            for (int i = 0; i < h * w; i++) {
-                pixels[i] = Color.rgb(redCanal[i] / maskTotal, greenCanal[i] / maskTotal, blueCanal[i] / maskTotal);
-            }
-            bmp.setPixels(pixels, 0, w, 0, 0, w, h);
-        }
-        /**
-         * Blurs a Bitmap changing using a Gaussian Mask.
-         * Smooths the Bitmap and reduces the noise and the details in the Bitmap (better than mediumFilter).
-         * @param bmp :
-         *            the Bitmap which is modified
-         */
-        public void gaussianFilter (Bitmap bmp){
 
-            int[] pixels = new int[h * w];
-            bmp.getPixels(pixels, 0, w, 0, 0, w, h);
-            int[][] usedMask = gaussianMask;
-            int n = usedMask.length / 2;
-            int maskTotal = 0;
-
-            for (int u = -n; u <= n; u++) {
-
-                for (int v = -n; v <= n; v++) {
-
-                    maskTotal += usedMask[u + n][v + n];                        //The sum of the mask's values
-
-                }
-            }
-
-            int[] redCanal = new int[h * w];
-            int[] greenCanal = new int[h * w];
-            int[] blueCanal = new int[h * w];
-
-            for (int i = 0; i < h * w; i++) {
-
-                redCanal[i] = Color.red(pixels[i]);
-                greenCanal[i] = Color.green(pixels[i]);
-                blueCanal[i] = Color.blue(pixels[i]);
-
-            }
-
-            redCanal = convolution(redCanal, usedMask);
-            greenCanal = convolution(greenCanal, usedMask);
-            blueCanal = convolution(blueCanal, usedMask);
-
-            for (int i = 0; i < h * w; i++) {
-
-                pixels[i] = Color.rgb(redCanal[i] / maskTotal, greenCanal[i] / maskTotal, blueCanal[i] / maskTotal);
-
-            }
-
-            bmp.setPixels(pixels, 0, w, 0, 0, w, h);
-        }
-        /**
-         * Shows the Sobel edges of a Bitmap.
-         * @param bmp :
-         *            the Bitmap which is modified
-         */
-        public void sobel (Bitmap bmp){
-            gaussianFilter(bmp);
-            int[] pixels = new int[h * w];
-            int[] gradient = new int[h * w];
-            bmp.getPixels(pixels, 0, w, 0, 0, w, h);
-            int[] grayCanal = new int[h * w];
-            for (int i = 0; i < h * w; i++) {
-                int r = Color.red(pixels[i]);
-                int g = Color.green(pixels[i]);
-                int b = Color.blue(pixels[i]);
-                int lum = (int) (0.3 * r + 0.59 * g + 0.11 * b);
-                grayCanal[i] = lum;                                         //grayCanal is either red, blue or green canal as they have the same value
-            }
-            int[] gx = convolution(grayCanal, h1Sobel);                     //horizontal gradient
-            int[] gy = convolution(grayCanal, h2Sobel);                     //vertical gradient
-            for (int i = 1; i < h * w; i++) {                                 //calculating the norm's gradient
-                gradient[i] = (int) Math.sqrt(gx[i] * gx[i] + gy[i] * gy[i]);
-                if (gradient[i] > 255) {
-                    gradient[i] = 255;
-                }
-                pixels[i] = Color.rgb(gradient[i], gradient[i], gradient[i]);
-            }
-            bmp.setPixels(pixels, 0, w, 0, 0, w, h);
-        }
-        /**
-         * Shows the Laplacian edges of a Bitmap.
-         * @param bmp ;
-         *            the Bitmap which is modified
-         */
-        public void laplace (Bitmap bmp){
-            gaussianFilter(bmp);
-            toGray(bmp);
-            int[] pixels = new int[h * w];
-            bmp.getPixels(pixels, 0, w, 0, 0, w, h);
-            int[] grayCanal = new int[h * w];
-            for (int i = 0; i < h * w; i++) {
-                int lum = Color.red(pixels[i]);
-                grayCanal[i] = lum;
-            }
-            int[] laplaceEdges = convolution(grayCanal, laplace4cx);
-            for (int i = 0; i < h * w; i++) {
-                if (laplaceEdges[i] < 0) {
-                    laplaceEdges[i] = 0;
-                }
-                if (laplaceEdges[i] > 255 || laplaceEdges[i] != 0) {
-                    laplaceEdges[i] = 255;
-                }
-                laplaceEdges[i] = 255 - laplaceEdges[i];
-                pixels[i] = Color.rgb(laplaceEdges[i], laplaceEdges[i], laplaceEdges[i]);
-            }
-            bmp.setPixels(pixels, 0, w, 0, 0, w, h);
-        }
 
     }

@@ -30,18 +30,6 @@
         android:title="Color Histogram Equalisation"
         />
 
-    <item
-        android:id="@+id/averageFilter"
-        android:title="Average Filter"
-        />
 
-    <item
-        android:id="@+id/sobel"
-        android:title="Sobel"
-        />
-    <item
-        android:id="@+id/laplace"
-        android:title="Laplace"
-        />
 
 </menu>
